@@ -3,7 +3,7 @@
 - [x] Creating Sales
 - [x] Querying Sales
 - [x] Updating Sales
-- [ ] Creating Recurrent Sales
+- [x] Creating Recurrent Sales
 - [ ] Cancelling Recurrent Sales
 - [ ] Listing Endpoints
 - [ ] Generating Swagger

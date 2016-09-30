@@ -6,9 +6,12 @@ module Web.Payments.Cielo.Types where
 import           Control.Exception
 import           Control.Monad.Except
 import           Control.Monad.Reader
-import           Data.Aeson                          (Value (..))
+import           Data.Aeson
+import           Data.Aeson.Types
 import qualified Data.ByteString.Lazy                as BL
+import           Data.Convertible
 import           Data.Default
+import           Data.Monoid                         ((<>))
 import           Data.Text                           (Text)
 import           Network.HTTP.Client
 import           Web.Payments.Cielo.Types.DeriveJSON
@@ -35,12 +38,12 @@ instance Exception CieloError where
 data Merchant = Merchant { merchantId  :: Text
                          , merchantKey :: Text
                          }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 data Environment = Environment { environmentApiUrl      :: Text
                                , environmentApiQueryUrl :: Text
                                }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default Environment where
     def = sandboxEnv
@@ -56,7 +59,7 @@ sandboxEnv = Environment "https://apisandbox.cieloecommerce.cielo.com.br"
 data PaymentProvider = PaymentProviderBradesco
                      | PaymentProviderBancoDoBrasil
                      | PaymentProviderSimulado
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 deriveJSON ''PaymentProvider
 
@@ -64,7 +67,7 @@ data PaymentType = PaymentTypeCreditCard
                  | PaymentTypeDebitCard
                  | PaymentTypeElectronicTransfer
                  | PaymentTypeBoleto
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default PaymentType where
     def = PaymentTypeCreditCard
@@ -84,7 +87,7 @@ data Currency = CurrencyBRL
               | CurrencyVEB
               | CurrencyVEF
               | CurrencyGBP
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default Currency where
     def = CurrencyBRL
@@ -96,21 +99,48 @@ data Interval = IntervalMonthly
               | IntervalQuarterly
               | IntervalSemiAnnual
               | IntervalAnnual
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default Interval where
     def = IntervalMonthly
 
-deriveJSON ''Interval
+instance ToJSON Interval where
+    toJSON IntervalMonthly = "Monthly"
+    toJSON IntervalBimonthly = "Bimonthly"
+    toJSON IntervalQuarterly = "Quarterly"
+    toJSON IntervalSemiAnnual = "SemiAnnual"
+    toJSON IntervalAnnual = "Annual"
+
+instance FromJSON Interval where
+    parseJSON (String m) = case m of
+        "Monthly" -> return IntervalMonthly
+        "Bimonthly" -> return IntervalBimonthly
+        "Quarterly" -> return IntervalQuarterly
+        "SemiAnnual" -> return IntervalSemiAnnual
+        "Annual" -> return IntervalAnnual
+        str -> fail ("Failed to parse Interval " <> convert str)
+    parseJSON (Number m) = case m of
+        1 -> return IntervalMonthly
+        2 -> return IntervalBimonthly
+        4 -> return IntervalQuarterly
+        6 -> return IntervalSemiAnnual
+        12 -> return IntervalAnnual
+        n -> fail ("Failed to parse Interval " <> show n)
+    parseJSON invalid = typeMismatch "Interval" invalid
 
 data RecurrentPayment = RecurrentPayment { recurrentPaymentAuthorizeNow :: Bool
                                          , recurrentPaymentEndDate      :: Maybe Text
+                                         , recurrentPaymentStartDate    :: Maybe Text
                                          , recurrentPaymentInterval     :: Maybe Interval
                                          }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default RecurrentPayment where
-    def = RecurrentPayment True Nothing (Just IntervalMonthly)
+    def = RecurrentPayment { recurrentPaymentAuthorizeNow = True
+                           , recurrentPaymentEndDate = Nothing
+                           , recurrentPaymentStartDate = Nothing
+                           , recurrentPaymentInterval = Just IntervalMonthly
+                           }
 
 deriveJSON ''RecurrentPayment
 
@@ -122,7 +152,7 @@ data Address = Address { addressStreet     :: Maybe Text
                        , addressState      :: Maybe Text
                        , addressCountry    :: Maybe Text
                        }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default Address where
     def = Address Nothing Nothing Nothing Nothing Nothing Nothing Nothing
@@ -137,7 +167,7 @@ data CreditCard = CreditCard { creditCardCardNumber     :: Text
                              , creditCardBrand          :: Text
                              , creditCardCardToken      :: Maybe Text
                              }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default CreditCard where
     def = CreditCard "" "" "" Nothing Nothing "" Nothing
@@ -152,7 +182,7 @@ data Customer = Customer { customerName            :: Text
                          , customerAddress         :: Maybe Address
                          , customerDeliveryAddress :: Maybe Address
                          }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default Customer where
     def = Customer "" Nothing Nothing Nothing Nothing Nothing Nothing
@@ -194,7 +224,7 @@ data Payment = Payment { paymentServiceTaxAmount    :: Int
                        , paymentDigitableLine       :: Maybe Text
                        , paymentAddress             :: Maybe Text
                        }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 instance Default Payment where
     def = Payment { paymentServiceTaxAmount    = 0
@@ -238,6 +268,15 @@ data Sale = Sale { saleMerchantOrderId :: Text
                  , saleCustomer        :: Customer
                  , salePayment         :: Payment
                  }
-  deriving(Read, Show)
+  deriving(Read, Show, Eq)
 
 deriveJSON ''Sale
+
+data SaleUpdate = SaleUpdate { saleUpdateStatus        :: Int
+                             , saleUpdateReturnCode    :: Text
+                             , saleUpdateReturnMessage :: Text
+                             , saleUpdateLinks         :: [Value]
+                             }
+  deriving(Read, Show, Eq)
+
+deriveJSON ''SaleUpdate

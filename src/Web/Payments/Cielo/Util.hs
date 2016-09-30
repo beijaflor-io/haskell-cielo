@@ -35,13 +35,14 @@ cieloRequestOptions = do
 sendRaw
     :: (MonadCielo m, ToJSON arg)
     => (Options -> String -> Value -> IO (Response BL.ByteString))
-    -> String -> arg -> m (Response BL.ByteString)
-sendRaw requester url arg = do
+    -> String -> [(Text, Text)] -> arg -> m (Response BL.ByteString)
+sendRaw requester url query arg = do
     CieloConfig _ Environment{..} <- ask
     opts <- cieloRequestOptions
     let targetUrl = convert environmentApiUrl <> url
+        opts' = opts & params .~ query
         payload = toJSON arg
-    eret <- liftIO $ try $ requester opts targetUrl payload
+    eret <- liftIO $ try $ requester opts' targetUrl payload
     case eret of
         Left ex@(StatusCodeException status _ _) -> case status of
             Status 404 _ -> throwError (CieloNotFoundError url ex)
@@ -79,15 +80,15 @@ get url query = do
 send
     :: (MonadCielo m, ToJSON arg, FromJSON ret)
     => (Options -> String -> Value -> IO (Response BL.ByteString))
-    -> String -> arg -> m ret
-send requester url arg = do
-    res <- sendRaw requester url arg
+    -> String -> [(Text, Text)] -> arg -> m ret
+send requester url query arg = do
+    res <- sendRaw requester url query arg
     case asJSON res of
         Right res' -> return (res' ^. responseBody)
         Left err -> throwError (CieloJSONError url err (res ^. responseBody))
 
-post :: (MonadCielo m, ToJSON arg, FromJSON ret) => String -> arg -> m ret
+post :: (MonadCielo m, ToJSON arg, FromJSON ret) => String -> [(Text, Text)] -> arg -> m ret
 post = send postWith
 
-put :: (MonadCielo m, ToJSON arg, FromJSON ret) => String -> arg -> m ret
+put :: (MonadCielo m, ToJSON arg, FromJSON ret) => String -> [(Text, Text)] -> arg -> m ret
 put = send putWith

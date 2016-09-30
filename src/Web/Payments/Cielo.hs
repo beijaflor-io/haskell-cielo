@@ -23,14 +23,29 @@ getMerchantOrderId :: MonadIO m => m Text
 getMerchantOrderId = liftIO $ toText <$> nextRandom
 
 createSale :: MonadCielo m => Sale -> m Sale
-createSale = post "/1/sales"
+createSale = post "/1/sales" []
 
 querySale :: MonadCielo m => Text -> m Sale
 querySale paymentId = get ("/1/sales/" <> convert paymentId) []
 
-updateSale :: MonadCielo m => Text -> Text -> m ()
-updateSale paymentId paymentType =
-    put ("/1/sales/" <> convert paymentId <> "/" <> convert paymentType) ()
+captureSale :: MonadCielo m => Text -> Maybe Int -> Maybe Int -> m SaleUpdate
+captureSale paymentId mamount mserviceTaxAmount =
+    updateSale paymentId "capture" query
+  where
+    query =
+        maybe [] (\a -> [("amount", convert (show a))]) mamount ++
+        maybe [] (\a -> [("serviceTaxAmount", convert (show a))]) mserviceTaxAmount
+
+voidSale :: MonadCielo m => Text -> Maybe Int -> m SaleUpdate
+voidSale paymentId mamount = updateSale paymentId "void" query
+  where
+    query = maybe [] (\a -> [("amount", convert (show a))]) mamount
+
+updateSale :: MonadCielo m => Text -> Text -> [(Text, Text)] -> m SaleUpdate
+updateSale paymentId paymentType query = put
+    ("/1/sales/" <> convert paymentId <> "/" <> convert paymentType)
+    query
+    (object [])
 
 runCielo :: CieloConfig -> CieloM a -> IO a
 runCielo cnf rdr = do

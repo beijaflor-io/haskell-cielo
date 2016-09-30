@@ -29,7 +29,7 @@ docRandomTestCase = DocRandomTestCase "Autorização Aleatória" "00000000000000
 spec :: Spec
 spec = describe "cielo" $ do
     cnf <- runIO cieloConfigFromEnv
-    describe "createSale" $
+    describe "createSale" $ do
         it "creates a sale with cielo" $
             runCielo cnf $ do
                 uuid <- getMerchantOrderId
@@ -45,11 +45,108 @@ spec = describe "cielo" $ do
                                                         , paymentAmount = 10000
                                                         }
                                 }
-
                 liftIO $ pPrint sale
-                let mpaymentId = paymentPaymentId (salePayment sale)
-                case mpaymentId of
-                    Just paymentId -> do
-                        sale <- querySale paymentId
-                        liftIO $ pPrint sale
-                    Nothing -> error "This should be changed"
+
+        it "creates recurrent sales" $
+            runCielo cnf $ do
+                uuid <- getMerchantOrderId
+                sale <- createSale Sale { saleMerchantOrderId = uuid
+                                        , saleCustomer = def { customerName = "Pedro Tacla Yamada"
+                                                             }
+                                        , salePayment = def { paymentCreditCard = def { creditCardCardNumber = "0000000000000001"
+                                                                                      , creditCardHolder = "Pedro Tacla Yamada"
+                                                                                      , creditCardExpirationDate = "12/2023"
+                                                                                      , creditCardSecurityCode = Just "123"
+                                                                                      , creditCardBrand = "visa"
+                                                                                      }
+                                                            , paymentAmount = 10000
+                                                            , paymentRecurrentPayment = Just def
+                                                            }
+                                }
+                liftIO $ pPrint sale
+
+        it "creates recurrent sales with start dates" $
+            runCielo cnf $ do
+                uuid <- getMerchantOrderId
+                sale <- createSale Sale { saleMerchantOrderId = uuid
+                                        , saleCustomer = def { customerName = "Pedro Tacla Yamada"
+                                                             }
+                                        , salePayment = def { paymentCreditCard = def { creditCardCardNumber = "0000000000000001"
+                                                                                      , creditCardHolder = "Pedro Tacla Yamada"
+                                                                                      , creditCardExpirationDate = "12/2023"
+                                                                                      , creditCardSecurityCode = Just "123"
+                                                                                      , creditCardBrand = "visa"
+                                                                                      }
+                                                            , paymentAmount = 10000
+                                                            , paymentRecurrentPayment = Just def { recurrentPaymentStartDate = Just "2018-12-03"
+                                                                                                 }
+                                                            }
+                                }
+                liftIO $ pPrint sale
+
+        it "creates recurrent sales with annual intervals" $ do
+            sale <- runCielo cnf $ do
+                uuid <- getMerchantOrderId
+                sale <- createSale Sale { saleMerchantOrderId = uuid
+                                        , saleCustomer = def { customerName = "Pedro Tacla Yamada"
+                                                             }
+                                        , salePayment = def { paymentCreditCard = def { creditCardCardNumber = "0000000000000001"
+                                                                                      , creditCardHolder = "Pedro Tacla Yamada"
+                                                                                      , creditCardExpirationDate = "12/2023"
+                                                                                      , creditCardSecurityCode = Just "123"
+                                                                                      , creditCardBrand = "visa"
+                                                                                      }
+                                                            , paymentAmount = 10000
+                                                            , paymentRecurrentPayment = Just def { recurrentPaymentStartDate = Just "2018-12-03"
+                                                                                                 , recurrentPaymentInterval = Just IntervalAnnual
+                                                                                                 }
+                                                            }
+                                }
+                liftIO $ pPrint sale
+                return sale
+            let Just intl = recurrentPaymentInterval <$> paymentRecurrentPayment (salePayment sale)
+            intl `shouldBe` Just IntervalAnnual
+
+    describe "querySale" $
+        it "works" $
+            runCielo cnf $ do
+                uuid <- getMerchantOrderId
+                sale <- createSale Sale { saleMerchantOrderId = uuid
+                                , saleCustomer = def { customerName = "Pedro Tacla Yamada"
+                                                     }
+                                , salePayment = def { paymentCreditCard = def { creditCardCardNumber = "0000000000000001"
+                                                                              , creditCardHolder = "Pedro Tacla Yamada"
+                                                                              , creditCardExpirationDate = "12/2023"
+                                                                              , creditCardSecurityCode = Just "123"
+                                                                              , creditCardBrand = "visa"
+                                                                              }
+                                                        , paymentAmount = 10000
+                                                        }
+                                }
+                liftIO $ pPrint sale
+                let Just paymentId = paymentPaymentId (salePayment sale)
+                sale' <- querySale paymentId
+                liftIO $ pPrint sale'
+
+    describe "captureSale / voidSale" $
+        it "works" $
+            runCielo cnf $ do
+                uuid <- getMerchantOrderId
+                sale <- createSale Sale { saleMerchantOrderId = uuid
+                                        , saleCustomer = def { customerName = "Pedro Tacla Yamada"
+                                                             }
+                                        , salePayment = def { paymentCreditCard = def { creditCardCardNumber = "0000000000000001"
+                                                                                      , creditCardHolder = "Pedro Tacla Yamada"
+                                                                                      , creditCardExpirationDate = "12/2023"
+                                                                                      , creditCardSecurityCode = Just "123"
+                                                                                      , creditCardBrand = "visa"
+                                                                                      }
+                                                            , paymentAmount = 10000
+                                                            }
+                                        }
+                liftIO $ pPrint sale
+                let Just paymentId = paymentPaymentId (salePayment sale)
+                sale''' <- captureSale paymentId (Just 9000) Nothing
+                liftIO $ pPrint sale'''
+                sale'' <- voidSale paymentId (Just 1000)
+                liftIO $ pPrint sale''
