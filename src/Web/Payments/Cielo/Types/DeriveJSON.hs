@@ -1,16 +1,17 @@
-module DeriveJSON where
+module Web.Payments.Cielo.Types.DeriveJSON where
 
-import qualified Data.Aeson.TH as Aeson
+import qualified Data.Aeson.TH              as Aeson
 import           Data.Char
 import           Language.Haskell.TH.Syntax
 
+deriveJSON :: Name -> Q [Dec]
 deriveJSON t = Aeson.deriveJSON
                  Aeson.defaultOptions
-                   { Aeson.fieldLabelModifier = uncapitalize . (drop (length (nameBase t)))
+                   { Aeson.fieldLabelModifier = drop (length (nameBase t))
                    , Aeson.constructorTagModifier = drop (length (nameBase t))
                    }
                  t
 
 uncapitalize :: String -> String
 uncapitalize "" = ""
-uncapitalize (c:cs) = (toLower c : cs)
+uncapitalize (c:cs) = toLower c : cs
