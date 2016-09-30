@@ -3,10 +3,34 @@
 
 module Web.Payments.Cielo.Types where
 
-import           Data.Aeson                          (Value)
-import qualified Data.Aeson.TH                       as Aeson
+import           Control.Exception
+import           Control.Monad.Except
+import           Control.Monad.Reader
+import           Data.Aeson                          (Value (..))
+import qualified Data.ByteString.Lazy                as BL
+import           Data.Default
 import           Data.Text                           (Text)
+import           Network.HTTP.Client
 import           Web.Payments.Cielo.Types.DeriveJSON
+
+type MonadCielo m = ( MonadIO m
+                    , MonadReader CieloConfig m
+                    , MonadError CieloError m
+                    )
+type CieloM a = ReaderT CieloConfig (ExceptT CieloError IO) a
+
+data CieloConfig = CieloConfig { cieloConfigMerchant    :: Merchant
+                               , cieloConfigEnvironment :: Environment
+                               }
+
+data CieloError
+    = CieloJSONError String SomeException BL.ByteString
+    | CieloInvalidError String HttpException (Maybe Value)
+    | CieloNotFoundError String HttpException
+    | CieloHttpException String HttpException (Maybe Value)
+  deriving(Show)
+
+instance Exception CieloError where
 
 data Merchant = Merchant { merchantId  :: Text
                          , merchantKey :: Text
@@ -18,13 +42,16 @@ data Environment = Environment { environmentApiUrl      :: Text
                                }
   deriving(Read, Show)
 
+instance Default Environment where
+    def = sandboxEnv
+
 productionEnv :: Environment
-productionEnv = Environment "https://api.cieloecommerce.cielo.com.br/"
-                            "https://apiquery.cieloecommerce.cielo.com.br/"
+productionEnv = Environment "https://api.cieloecommerce.cielo.com.br"
+                            "https://apiquery.cieloecommerce.cielo.com.br"
 
 sandboxEnv :: Environment
-sandboxEnv = Environment "https://apisandbox.cieloecommerce.cielo.com.br/"
-                         "https://apiquerysandbox.cieloecommerce.cielo.com.br/"
+sandboxEnv = Environment "https://apisandbox.cieloecommerce.cielo.com.br"
+                         "https://apiquerysandbox.cieloecommerce.cielo.com.br"
 
 data PaymentProvider = PaymentProviderBradesco
                      | PaymentProviderBancoDoBrasil
@@ -38,6 +65,9 @@ data PaymentType = PaymentTypeCreditCard
                  | PaymentTypeElectronicTransfer
                  | PaymentTypeBoleto
   deriving(Read, Show)
+
+instance Default PaymentType where
+    def = PaymentTypeCreditCard
 
 deriveJSON ''PaymentType
 
@@ -56,6 +86,9 @@ data Currency = CurrencyBRL
               | CurrencyGBP
   deriving(Read, Show)
 
+instance Default Currency where
+    def = CurrencyBRL
+
 deriveJSON ''Currency
 
 data Interval = IntervalMonthly
@@ -65,25 +98,34 @@ data Interval = IntervalMonthly
               | IntervalAnnual
   deriving(Read, Show)
 
+instance Default Interval where
+    def = IntervalMonthly
+
 deriveJSON ''Interval
 
 data RecurrentPayment = RecurrentPayment { recurrentPaymentAuthorizeNow :: Bool
-                                         , recurrentPaymentEndData      :: Text
+                                         , recurrentPaymentEndDate      :: Maybe Text
                                          , recurrentPaymentInterval     :: Maybe Interval
                                          }
   deriving(Read, Show)
 
+instance Default RecurrentPayment where
+    def = RecurrentPayment True Nothing (Just IntervalMonthly)
+
 deriveJSON ''RecurrentPayment
 
-data Address = Address { addressStreet     :: Text
-                       , addressNumber     :: Text
-                       , addressComplement :: Text
-                       , addressZipCode    :: Text
-                       , addressCity       :: Text
-                       , addressState      :: Text
-                       , addressCountry    :: Text
+data Address = Address { addressStreet     :: Maybe Text
+                       , addressNumber     :: Maybe Text
+                       , addressComplement :: Maybe Text
+                       , addressZipCode    :: Maybe Text
+                       , addressCity       :: Maybe Text
+                       , addressState      :: Maybe Text
+                       , addressCountry    :: Maybe Text
                        }
   deriving(Read, Show)
+
+instance Default Address where
+    def = Address Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 deriveJSON ''Address
 
@@ -97,6 +139,9 @@ data CreditCard = CreditCard { creditCardCardNumber     :: Text
                              }
   deriving(Read, Show)
 
+instance Default CreditCard where
+    def = CreditCard "" "" "" Nothing Nothing "" Nothing
+
 deriveJSON ''CreditCard
 
 data Customer = Customer { customerName            :: Text
@@ -109,25 +154,29 @@ data Customer = Customer { customerName            :: Text
                          }
   deriving(Read, Show)
 
+instance Default Customer where
+    def = Customer "" Nothing Nothing Nothing Nothing Nothing Nothing
+
 deriveJSON ''Customer
 
 data Payment = Payment { paymentServiceTaxAmount    :: Int
                        , paymentInstallments        :: Int
-                       , paymentInterest            :: Maybe Int
+                       , paymentInterest            :: Value
+                       -- ^ Sometimes this is a string, sometimes it's an int... :P
+                       , paymentCreditCard          :: CreditCard
+                       , paymentType                :: PaymentType
+                       , paymentAmount              :: Int
                        , paymentCapture             :: Maybe Bool
                        , paymentAuthenticate        :: Maybe Bool
                        , paymentRecurrent           :: Maybe Bool
                        , paymentRecurrentPayment    :: Maybe RecurrentPayment
-                       , paymentCreditCard          :: CreditCard
                        , paymentTid                 :: Maybe Text
-                       , paymentProofOfSale         :: Text
-                       , paymentAuthorizationCode   :: Text
+                       , paymentProofOfSale         :: Maybe Text
+                       , paymentAuthorizationCode   :: Maybe Text
                        , paymentSoftDescriptor      :: Maybe Text
-                       , paymentReturnUrl           :: Text
-                       , paymentProvider            :: PaymentProvider
+                       , paymentReturnUrl           :: Maybe Text
+                       , paymentProvider            :: Maybe PaymentProvider
                        , paymentPaymentId           :: Maybe Text
-                       , paymentType                :: PaymentType
-                       , paymentAmount              :: Int
                        , paymentReceivedDate        :: Maybe Text
                        , paymentCapturedAmount      :: Maybe Int
                        , paymentCapturedDate        :: Maybe Text
@@ -136,8 +185,8 @@ data Payment = Payment { paymentServiceTaxAmount    :: Int
                        , paymentReturnCode          :: Maybe Text
                        , paymentReturnMessage       :: Maybe Text
                        , paymentStatus              :: Maybe Int
-                       , paymentLinks               :: [Value]
-                       , paymentExtraDataCollection :: [Value]
+                       , paymentLinks               :: Maybe [Value]
+                       , paymentExtraDataCollection :: Maybe [Value]
                        , paymentExpirationDate      :: Maybe Text
                        , paymentUrl                 :: Maybe Text
                        , paymentNumber              :: Maybe Text
@@ -146,6 +195,42 @@ data Payment = Payment { paymentServiceTaxAmount    :: Int
                        , paymentAddress             :: Maybe Text
                        }
   deriving(Read, Show)
+
+instance Default Payment where
+    def = Payment { paymentServiceTaxAmount    = 0
+                  , paymentInstallments        = 1
+                  , paymentInterest            = Null
+                  , paymentCapture             = Nothing
+                  , paymentAuthenticate        = Nothing
+                  , paymentRecurrent           = Nothing
+                  , paymentRecurrentPayment    = Nothing
+                  , paymentCreditCard          = def
+                  , paymentTid                 = Nothing
+                  , paymentProofOfSale         = Nothing
+                  , paymentAuthorizationCode   = Nothing
+                  , paymentSoftDescriptor      = Nothing
+                  , paymentReturnUrl           = Nothing
+                  , paymentProvider            = Nothing
+                  , paymentPaymentId           = Nothing
+                  , paymentType                = def
+                  , paymentAmount              = 0
+                  , paymentReceivedDate        = Nothing
+                  , paymentCapturedAmount      = Nothing
+                  , paymentCapturedDate        = Nothing
+                  , paymentCurrency            = Nothing
+                  , paymentCountry             = Nothing
+                  , paymentReturnCode          = Nothing
+                  , paymentReturnMessage       = Nothing
+                  , paymentStatus              = Nothing
+                  , paymentLinks               = Nothing
+                  , paymentExtraDataCollection = Nothing
+                  , paymentExpirationDate      = Nothing
+                  , paymentUrl                 = Nothing
+                  , paymentNumber              = Nothing
+                  , paymentBarCodeNumber       = Nothing
+                  , paymentDigitableLine       = Nothing
+                  , paymentAddress             = Nothing
+                  }
 
 deriveJSON ''Payment
 

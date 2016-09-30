@@ -1,10 +1,14 @@
 module Web.Payments.CieloSpec where
 
+import           Control.Monad.IO.Class
+import           Data.Aeson
+import           Data.Default
 import           Data.Text                (Text)
 import           Data.UUID
 import           Data.UUID.V4
 import           Test.Hspec
 import           Text.Show.Pretty
+
 import           Web.Payments.Cielo
 import           Web.Payments.Cielo.Types
 
@@ -26,10 +30,10 @@ spec :: Spec
 spec = describe "cielo" $ do
     cnf <- runIO cieloConfigFromEnv
     describe "createSale" $
-        it "creates a sale with cielo" $ do
-            uuid <- toText <$> nextRandom
-            r <- runCielo cnf $
-                createSale Sale { saleMerchantOrderId = uuid
+        it "creates a sale with cielo" $
+            runCielo cnf $ do
+                uuid <- getMerchantOrderId
+                sale <- createSale Sale { saleMerchantOrderId = uuid
                                 , saleCustomer = Customer { customerName            = "Pedro Tacla Yamada"
                                                           , customerEmail           = Nothing
                                                           , customerBirthDate       = Nothing
@@ -40,7 +44,7 @@ spec = describe "cielo" $ do
                                                           }
                                 , salePayment = Payment { paymentServiceTaxAmount    = 0
                                                         , paymentInstallments        = 1
-                                                        , paymentInterest            = Nothing
+                                                        , paymentInterest            = Null
                                                         , paymentCapture             = Nothing
                                                         , paymentAuthenticate        = Nothing
                                                         , paymentRecurrent           = Nothing
@@ -54,13 +58,13 @@ spec = describe "cielo" $ do
                                                                                                   , creditCardCardToken      = Nothing
                                                                                                   }
                                                         , paymentTid                 = Nothing
-                                                        , paymentProofOfSale         = "123123"
-                                                        , paymentAuthorizationCode   = "123456"
+                                                        , paymentProofOfSale         = Nothing
+                                                        , paymentAuthorizationCode   = Nothing
                                                         , paymentSoftDescriptor      = Nothing
-                                                        , paymentReturnUrl           = ""
-                                                        , paymentProvider            = PaymentProviderBradesco
+                                                        , paymentReturnUrl           = Nothing
+                                                        , paymentProvider            = Nothing
                                                         , paymentPaymentId           = Nothing
-                                                        , paymentType                = PaymentTypeCreditCard
+                                                        , paymentType                = def
                                                         , paymentAmount              = 10000
                                                         , paymentReceivedDate        = Nothing
                                                         , paymentCapturedAmount      = Nothing
@@ -70,8 +74,8 @@ spec = describe "cielo" $ do
                                                         , paymentReturnCode          = Nothing
                                                         , paymentReturnMessage       = Nothing
                                                         , paymentStatus              = Nothing
-                                                        , paymentLinks               = []
-                                                        , paymentExtraDataCollection = []
+                                                        , paymentLinks               = Nothing
+                                                        , paymentExtraDataCollection = Nothing
                                                         , paymentExpirationDate      = Nothing
                                                         , paymentUrl                 = Nothing
                                                         , paymentNumber              = Nothing
@@ -80,4 +84,11 @@ spec = describe "cielo" $ do
                                                         , paymentAddress             = Nothing
                                                         }
                                 }
-            pPrint r
+
+                liftIO $ pPrint sale
+                let mpaymentId = paymentPaymentId (salePayment sale)
+                case mpaymentId of
+                    Just paymentId -> do
+                        sale <- querySale paymentId
+                        liftIO $ pPrint sale
+                    Nothing -> error "This should be changed"

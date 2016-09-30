@@ -13,6 +13,7 @@ default-extensions:
 - ConstraintKinds
 - FlexibleContexts
 - RecordWildCards
+- ScopedTypeVariables
 
 dependencies:
 - base >=4.8 && <5
@@ -24,6 +25,10 @@ dependencies:
 - wreq
 - lens
 - convertible
+- bytestring
+- http-types
+- http-client >=0.4.31.1
+- data-default
 
 library:
   source-dirs: src

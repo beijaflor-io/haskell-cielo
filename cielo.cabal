@@ -17,7 +17,7 @@ extra-source-files:
 library
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings TemplateHaskell ConstraintKinds FlexibleContexts RecordWildCards
+  default-extensions: OverloadedStrings TemplateHaskell ConstraintKinds FlexibleContexts RecordWildCards ScopedTypeVariables
   build-depends:
       base >=4.8 && <5
     , text >=1.2 && <1.3
@@ -28,11 +28,16 @@ library
     , wreq
     , lens
     , convertible
+    , bytestring
+    , http-types
+    , http-client >=0.4.31.1
+    , data-default
   exposed-modules:
       Web.Payments.Cielo
       Web.Payments.Cielo.Types
       Web.Payments.Cielo.Types.DeriveJSON
   other-modules:
+      Web.Payments.Cielo.Util
       Paths_cielo
   default-language: Haskell2010
 
@@ -41,7 +46,7 @@ test-suite hspec
   main-is: Spec.hs
   hs-source-dirs:
       test
-  default-extensions: OverloadedStrings TemplateHaskell ConstraintKinds FlexibleContexts RecordWildCards
+  default-extensions: OverloadedStrings TemplateHaskell ConstraintKinds FlexibleContexts RecordWildCards ScopedTypeVariables
   build-depends:
       base >=4.8 && <5
     , text >=1.2 && <1.3
@@ -52,6 +57,10 @@ test-suite hspec
     , wreq
     , lens
     , convertible
+    , bytestring
+    , http-types
+    , http-client >=0.4.31.1
+    , data-default
     , base
     , hspec
     , QuickCheck
