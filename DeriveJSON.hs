@@ -5,11 +5,11 @@ import           Data.Char
 import           Language.Haskell.TH.Syntax
 
 deriveJSON t = Aeson.deriveJSON
-    Aeson.defaultOptions
-    { Aeson.fieldLabelModifier = uncapitalize . (drop (length (nameBase t)))
-    , Aeson.constructorTagModifier = drop (length (nameBase t))
-    }
-    t
+                 Aeson.defaultOptions
+                   { Aeson.fieldLabelModifier = uncapitalize . (drop (length (nameBase t)))
+                   , Aeson.constructorTagModifier = drop (length (nameBase t))
+                   }
+                 t
 
 uncapitalize :: String -> String
 uncapitalize "" = ""
