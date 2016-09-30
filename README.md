@@ -1,11 +1,8 @@
 # haskell-cielo
 
-- [x] Creating Sales
-- [x] Querying Sales
-- [x] Updating Sales
-- [x] Creating Recurrent Sales
-- [ ] Cancelling Recurrent Sales
 - [ ] Listing Endpoints
 - [ ] Generating Swagger
 - [ ] Generating Internal API
 - [ ] Generating JavaScript
+
+All endpoints are wrapped; and smoke tested. This is shit code for a shit API.

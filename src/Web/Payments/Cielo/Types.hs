@@ -128,18 +128,20 @@ instance FromJSON Interval where
         n -> fail ("Failed to parse Interval " <> show n)
     parseJSON invalid = typeMismatch "Interval" invalid
 
-data RecurrentPayment = RecurrentPayment { recurrentPaymentAuthorizeNow :: Bool
-                                         , recurrentPaymentEndDate      :: Maybe Text
-                                         , recurrentPaymentStartDate    :: Maybe Text
-                                         , recurrentPaymentInterval     :: Maybe Interval
+data RecurrentPayment = RecurrentPayment { recurrentPaymentAuthorizeNow       :: Maybe Bool
+                                         , recurrentPaymentEndDate            :: Maybe Text
+                                         , recurrentPaymentStartDate          :: Maybe Text
+                                         , recurrentPaymentInterval           :: Maybe Interval
+                                         , recurrentPaymentRecurrentPaymentId :: Maybe Text
                                          }
   deriving(Read, Show, Eq)
 
 instance Default RecurrentPayment where
-    def = RecurrentPayment { recurrentPaymentAuthorizeNow = True
+    def = RecurrentPayment { recurrentPaymentAuthorizeNow = Just True
                            , recurrentPaymentEndDate = Nothing
                            , recurrentPaymentStartDate = Nothing
                            , recurrentPaymentInterval = Just IntervalMonthly
+                           , recurrentPaymentRecurrentPaymentId = Nothing
                            }
 
 deriveJSON ''RecurrentPayment
@@ -189,13 +191,13 @@ instance Default Customer where
 
 deriveJSON ''Customer
 
-data Payment = Payment { paymentServiceTaxAmount    :: Int
-                       , paymentInstallments        :: Int
-                       , paymentInterest            :: Value
+data Payment = Payment { paymentServiceTaxAmount    :: Maybe Int
+                       , paymentInstallments        :: Maybe Int
+                       , paymentInterest            :: Maybe Value
                        -- ^ Sometimes this is a string, sometimes it's an int... :P
-                       , paymentCreditCard          :: CreditCard
-                       , paymentType                :: PaymentType
-                       , paymentAmount              :: Int
+                       , paymentCreditCard          :: Maybe CreditCard
+                       , paymentType                :: Maybe PaymentType
+                       , paymentAmount              :: Maybe Int
                        , paymentCapture             :: Maybe Bool
                        , paymentAuthenticate        :: Maybe Bool
                        , paymentRecurrent           :: Maybe Bool
@@ -227,14 +229,14 @@ data Payment = Payment { paymentServiceTaxAmount    :: Int
   deriving(Read, Show, Eq)
 
 instance Default Payment where
-    def = Payment { paymentServiceTaxAmount    = 0
-                  , paymentInstallments        = 1
-                  , paymentInterest            = Null
+    def = Payment { paymentServiceTaxAmount    = Just 0
+                  , paymentInstallments        = Just 1
+                  , paymentInterest            = Just Null
                   , paymentCapture             = Nothing
                   , paymentAuthenticate        = Nothing
                   , paymentRecurrent           = Nothing
                   , paymentRecurrentPayment    = Nothing
-                  , paymentCreditCard          = def
+                  , paymentCreditCard          = Just def
                   , paymentTid                 = Nothing
                   , paymentProofOfSale         = Nothing
                   , paymentAuthorizationCode   = Nothing
@@ -242,8 +244,8 @@ instance Default Payment where
                   , paymentReturnUrl           = Nothing
                   , paymentProvider            = Nothing
                   , paymentPaymentId           = Nothing
-                  , paymentType                = def
-                  , paymentAmount              = 0
+                  , paymentType                = Just def
+                  , paymentAmount              = Just 0
                   , paymentReceivedDate        = Nothing
                   , paymentCapturedAmount      = Nothing
                   , paymentCapturedDate        = Nothing
@@ -280,3 +282,18 @@ data SaleUpdate = SaleUpdate { saleUpdateStatus        :: Int
   deriving(Read, Show, Eq)
 
 deriveJSON ''SaleUpdate
+
+data RecurrentPaymentQuery
+    = RecurrentPaymentQuery { recurrentPaymentQueryRecurrentPayment :: RecurrentPayment
+                            , recurrentPaymentQueryCustomer         :: Customer
+                            }
+  deriving(Read, Show, Eq)
+
+deriveJSON ''RecurrentPaymentQuery
+
+data SalesByMerchantOrderQuery
+    = SalesByMerchantOrderQuery { salesByMerchantOrderQueryPayments :: [Payment]
+                                }
+  deriving(Read, Show, Eq)
+
+deriveJSON ''SalesByMerchantOrderQuery
