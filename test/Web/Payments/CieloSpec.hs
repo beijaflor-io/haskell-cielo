@@ -34,54 +34,15 @@ spec = describe "cielo" $ do
             runCielo cnf $ do
                 uuid <- getMerchantOrderId
                 sale <- createSale Sale { saleMerchantOrderId = uuid
-                                , saleCustomer = Customer { customerName            = "Pedro Tacla Yamada"
-                                                          , customerEmail           = Nothing
-                                                          , customerBirthDate       = Nothing
-                                                          , customerIdentity        = Nothing
-                                                          , customerIdentityType    = Nothing
-                                                          , customerAddress         = Nothing
-                                                          , customerDeliveryAddress = Nothing
-                                                          }
-                                , salePayment = Payment { paymentServiceTaxAmount    = 0
-                                                        , paymentInstallments        = 1
-                                                        , paymentInterest            = Null
-                                                        , paymentCapture             = Nothing
-                                                        , paymentAuthenticate        = Nothing
-                                                        , paymentRecurrent           = Nothing
-                                                        , paymentRecurrentPayment    = Nothing
-                                                        , paymentCreditCard          = CreditCard { creditCardCardNumber     = "0000000000000001"
-                                                                                                  , creditCardHolder         = "Pedro Tacla Yamada"
-                                                                                                  , creditCardExpirationDate = "12/2023"
-                                                                                                  , creditCardSecurityCode   = Just "123"
-                                                                                                  , creditCardSaveCard       = Nothing
-                                                                                                  , creditCardBrand          = "visa"
-                                                                                                  , creditCardCardToken      = Nothing
-                                                                                                  }
-                                                        , paymentTid                 = Nothing
-                                                        , paymentProofOfSale         = Nothing
-                                                        , paymentAuthorizationCode   = Nothing
-                                                        , paymentSoftDescriptor      = Nothing
-                                                        , paymentReturnUrl           = Nothing
-                                                        , paymentProvider            = Nothing
-                                                        , paymentPaymentId           = Nothing
-                                                        , paymentType                = def
-                                                        , paymentAmount              = 10000
-                                                        , paymentReceivedDate        = Nothing
-                                                        , paymentCapturedAmount      = Nothing
-                                                        , paymentCapturedDate        = Nothing
-                                                        , paymentCurrency            = Nothing
-                                                        , paymentCountry             = Nothing
-                                                        , paymentReturnCode          = Nothing
-                                                        , paymentReturnMessage       = Nothing
-                                                        , paymentStatus              = Nothing
-                                                        , paymentLinks               = Nothing
-                                                        , paymentExtraDataCollection = Nothing
-                                                        , paymentExpirationDate      = Nothing
-                                                        , paymentUrl                 = Nothing
-                                                        , paymentNumber              = Nothing
-                                                        , paymentBarCodeNumber       = Nothing
-                                                        , paymentDigitableLine       = Nothing
-                                                        , paymentAddress             = Nothing
+                                , saleCustomer = def { customerName = "Pedro Tacla Yamada"
+                                                     }
+                                , salePayment = def { paymentCreditCard = def { creditCardCardNumber = "0000000000000001"
+                                                                              , creditCardHolder = "Pedro Tacla Yamada"
+                                                                              , creditCardExpirationDate = "12/2023"
+                                                                              , creditCardSecurityCode = Just "123"
+                                                                              , creditCardBrand = "visa"
+                                                                              }
+                                                        , paymentAmount = 10000
                                                         }
                                 }
 
