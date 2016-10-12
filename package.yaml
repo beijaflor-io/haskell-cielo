@@ -1,9 +1,8 @@
 name: cielo
-version: '0.1.0.0'
-synopsis: Cielo API bindings for Haskell
+version: '0.1.2.0'
 author: Pedro Tacla Yamada
 synopsis: Cielo API v3 Bindings for Haskell
-describe: Cielo API v3 Bindings
+description: Cielo API v3 Bindings
 maintainer: tacla.yamada@gmail.com
 category: Web
 license: AllRightsReserved

@@ -3,8 +3,10 @@
 -- see: https://github.com/sol/hpack
 
 name:           cielo
-version:        0.1.0.0
-synopsis:       Cielo API bindings for Haskell
+version:        0.1.2.0
+synopsis:       Cielo API v3 Bindings for Haskell
+description:    Cielo API v3 Bindings
+category:       Web
 homepage:       https://github.com/beijaflor-io/haskell-cielo
 author:         Pedro Tacla Yamada
 maintainer:     tacla.yamada@gmail.com
