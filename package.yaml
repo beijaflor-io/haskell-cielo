@@ -1,8 +1,10 @@
 name: cielo
 version: '0.1.0.0'
+synopsis: Cielo API bindings for Haskell
 author: Pedro Tacla Yamada
 maintainer: tacla.yamada@gmail.com
 license: AllRightsReserved
+homepage: https://github.com/beijaflor-io/haskell-cielo
 
 extra-source-files:
 - ChangeLog.md
