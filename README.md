@@ -1,8 +1,5 @@
 # haskell-cielo
-
-- [ ] Listing Endpoints
-- [ ] Generating Swagger
-- [ ] Generating Internal API
-- [ ] Generating JavaScript
-
-All endpoints are wrapped; and smoke tested. This is shit code for a shit API.
+All endpoints are wrapped; and smoke tested. A lot of the code was generated
+from Java bindings; the types aren't properly specified, sometimes the Cielo API
+uses different request/response types so some things are just set to the `Value`
+aeson type, since we can only type it as being JSON.
