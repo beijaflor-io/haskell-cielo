@@ -1,0 +1,300 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE TemplateHaskell   #-}</span><span>
+</span><a name="line-3"></a><span>
+</span><a name="line-4"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Web</span><span class="hs-operator">.</span><span class="hs-identifier">Payments</span><span class="hs-operator">.</span><span class="hs-identifier">Cielo</span><span class="hs-operator">.</span><span class="hs-identifier">Types</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-5"></a><span>
+</span><a name="line-6"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Exception</span><span>
+</span><a name="line-7"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">Except</span><span>
+</span><a name="line-8"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">Reader</span><span>
+</span><a name="line-9"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Aeson</span><span>
+</span><a name="line-10"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Aeson</span><span class="hs-operator">.</span><span class="hs-identifier">Types</span><span>
+</span><a name="line-11"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">ByteString</span><span class="hs-operator">.</span><span class="hs-identifier">Lazy</span><span>                </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">BL</span><span>
+</span><a name="line-12"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Convertible</span><span>
+</span><a name="line-13"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Default</span><span>
+</span><a name="line-14"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Monoid</span><span>                         </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator hs-var">&lt;&gt;</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-15"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Text</span><span>                           </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Text</span><span class="hs-special">)</span><span>
+</span><a name="line-16"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Network</span><span class="hs-operator">.</span><span class="hs-identifier">HTTP</span><span class="hs-operator">.</span><span class="hs-identifier">Client</span><span>
+</span><a name="line-17"></a><span class="hs-keyword">import</span><span>           </span><a href="Web.Payments.Cielo.Types.DeriveJSON.html"><span class="hs-identifier">Web</span><span class="hs-operator">.</span><span class="hs-identifier">Payments</span><span class="hs-operator">.</span><span class="hs-identifier">Cielo</span><span class="hs-operator">.</span><span class="hs-identifier">Types</span><span class="hs-operator">.</span><span class="hs-identifier">DeriveJSON</span></a><span>
+</span><a name="line-18"></a><span>
+</span><a name="line-19"></a><span class="hs-keyword">type</span><span> </span><a name="MonadCielo"><a href="Web.Payments.Cielo.Types.html#MonadCielo"><span class="hs-identifier">MonadCielo</span></a></a><span> </span><a name="local-1627491596"><a href="#local-1627491596"><span class="hs-identifier">m</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span> </span><span class="hs-identifier hs-type">MonadIO</span><span> </span><a href="#local-1627491596"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-20"></a><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadReader</span><span> </span><a href="Web.Payments.Cielo.Types.html#CieloConfig"><span class="hs-identifier hs-type">CieloConfig</span></a><span> </span><a href="#local-1627491596"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-21"></a><span>                    </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">MonadError</span><span> </span><a href="Web.Payments.Cielo.Types.html#CieloError"><span class="hs-identifier hs-type">CieloError</span></a><span> </span><a href="#local-1627491596"><span class="hs-identifier hs-type">m</span></a><span>
+</span><a name="line-22"></a><span>                    </span><span class="hs-special">)</span><span>
+</span><a name="line-23"></a><span class="hs-keyword">type</span><span> </span><a name="CieloM"><a href="Web.Payments.Cielo.Types.html#CieloM"><span class="hs-identifier">CieloM</span></a></a><span> </span><a name="local-1627491185"><a href="#local-1627491185"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-type">ReaderT</span><span> </span><a href="Web.Payments.Cielo.Types.html#CieloConfig"><span class="hs-identifier hs-type">CieloConfig</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">ExceptT</span><span> </span><a href="Web.Payments.Cielo.Types.html#CieloError"><span class="hs-identifier hs-type">CieloError</span></a><span> </span><span class="hs-identifier hs-type">IO</span><span class="hs-special">)</span><span> </span><a href="#local-1627491185"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-24"></a><span>
+</span><a name="line-25"></a><span class="hs-keyword">data</span><span> </span><a name="CieloConfig"><a href="Web.Payments.Cielo.Types.html#CieloConfig"><span class="hs-identifier">CieloConfig</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="CieloConfig"><a href="Web.Payments.Cielo.Types.html#CieloConfig"><span class="hs-identifier">CieloConfig</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="cieloConfigMerchant"><a href="Web.Payments.Cielo.Types.html#cieloConfigMerchant"><span class="hs-identifier">cieloConfigMerchant</span></a></a><span>    </span><span class="hs-glyph">::</span><span> </span><a href="Web.Payments.Cielo.Types.html#Merchant"><span class="hs-identifier hs-type">Merchant</span></a><span>
+</span><a name="line-26"></a><span>                               </span><span class="hs-special">,</span><span> </span><a name="cieloConfigEnvironment"><a href="Web.Payments.Cielo.Types.html#cieloConfigEnvironment"><span class="hs-identifier">cieloConfigEnvironment</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier hs-type">Environment</span></a><span>
+</span><a name="line-27"></a><span>                               </span><span class="hs-special">}</span><span>
+</span><a name="line-28"></a><span>
+</span><a name="line-29"></a><span class="hs-keyword">data</span><span> </span><a name="CieloError"><a href="Web.Payments.Cielo.Types.html#CieloError"><span class="hs-identifier">CieloError</span></a></a><span>
+</span><a name="line-30"></a><span>    </span><span class="hs-glyph">=</span><span> </span><a name="CieloJSONError"><a href="Web.Payments.Cielo.Types.html#CieloJSONError"><span class="hs-identifier">CieloJSONError</span></a></a><span> </span><span class="hs-identifier hs-type">String</span><span> </span><span class="hs-identifier hs-type">SomeException</span><span> </span><span class="hs-identifier hs-type">BL</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">ByteString</span><span>
+</span><a name="line-31"></a><span>    </span><span class="hs-glyph">|</span><span> </span><a name="CieloInvalidError"><a href="Web.Payments.Cielo.Types.html#CieloInvalidError"><span class="hs-identifier">CieloInvalidError</span></a></a><span> </span><span class="hs-identifier hs-type">String</span><span> </span><span class="hs-identifier hs-type">HttpException</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-identifier hs-type">Value</span><span class="hs-special">)</span><span>
+</span><a name="line-32"></a><span>    </span><span class="hs-glyph">|</span><span> </span><a name="CieloNotFoundError"><a href="Web.Payments.Cielo.Types.html#CieloNotFoundError"><span class="hs-identifier">CieloNotFoundError</span></a></a><span> </span><span class="hs-identifier hs-type">String</span><span> </span><span class="hs-identifier hs-type">HttpException</span><span>
+</span><a name="line-33"></a><span>    </span><span class="hs-glyph">|</span><span> </span><a name="CieloHttpException"><a href="Web.Payments.Cielo.Types.html#CieloHttpException"><span class="hs-identifier">CieloHttpException</span></a></a><span> </span><span class="hs-identifier hs-type">String</span><span> </span><span class="hs-identifier hs-type">HttpException</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-identifier hs-type">Value</span><span class="hs-special">)</span><span>
+</span><a name="line-34"></a><span>  </span><span class="hs-keyword">deriving</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Show</span><span class="hs-special">)</span><span>
+</span><a name="line-35"></a><span>
+</span><a name="line-36"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">Exception</span><span> </span><a href="Web.Payments.Cielo.Types.html#CieloError"><span class="hs-identifier hs-type">CieloError</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-37"></a><span>
+</span><a name="line-38"></a><span class="hs-keyword">data</span><span> </span><a name="Merchant"><a href="Web.Payments.Cielo.Types.html#Merchant"><span class="hs-identifier">Merchant</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="Merchant"><a href="Web.Payments.Cielo.Types.html#Merchant"><span class="hs-identifier">Merchant</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="merchantId"><a href="Web.Payments.Cielo.Types.html#merchantId"><span class="hs-identifier">merchantId</span></a></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-39"></a><span>                         </span><span class="hs-special">,</span><span> </span><a name="merchantKey"><a href="Web.Payments.Cielo.Types.html#merchantKey"><span class="hs-identifier">merchantKey</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-40"></a><span>                         </span><span class="hs-special">}</span><span>
+</span><a name="line-41"></a><span>  </span><span class="hs-keyword">deriving</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Read</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Show</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Eq</span><span class="hs-special">)</span><span>
+</span><a name="line-42"></a><span>
+</span><a name="line-43"></a><span class="hs-keyword">data</span><span> </span><a name="Environment"><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier">Environment</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="Environment"><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier">Environment</span></a></a><span> </span><span class="hs-special">{</span><span> </span><a name="environmentApiUrl"><a href="Web.Payments.Cielo.Types.html#environmentApiUrl"><span class="hs-identifier">environmentApiUrl</span></a></a><span>      </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-44"></a><span>                               </span><span class="hs-special">,</span><span> </span><a name="environmentApiQueryUrl"><a href="Web.Payments.Cielo.Types.html#environmentApiQueryUrl"><span class="hs-identifier">environmentApiQueryUrl</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-45"></a><span>                               </span><span class="hs-special">}</span><span>
+</span><a name="line-46"></a><span>  </span><span class="hs-keyword">deriving</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Read</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Show</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Eq</span><span class="hs-special">)</span><span>
+</span><a name="line-47"></a><span>
+</span><a name="line-48"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">Default</span><span> </span><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier hs-type">Environment</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-49"></a><span>    </span><a name="local-1912604813"><span class="hs-identifier">def</span></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Web.Payments.Cielo.Types.html#sandboxEnv"><span class="hs-identifier hs-var">sandboxEnv</span></a><span>
+</span><a name="line-50"></a><span>
+</span><a name="line-51"></a><span class="hs-identifier">productionEnv</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier hs-type">Environment</span></a><span>
+</span><a name="line-52"></a><a name="productionEnv"><a href="Web.Payments.Cielo.Types.html#productionEnv"><span class="hs-identifier">productionEnv</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier hs-var">Environment</span></a><span> </span><span class="hs-string">&quot;https://api.cieloecommerce.cielo.com.br&quot;</span><span>
+</span><a name="line-53"></a><span>                            </span><span class="hs-string">&quot;https://apiquery.cieloecommerce.cielo.com.br&quot;</span><span>
+</span><a name="line-54"></a><span>
+</span><a name="line-55"></a><span class="hs-identifier">sandboxEnv</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier hs-type">Environment</span></a><span>
+</span><a name="line-56"></a><a name="sandboxEnv"><a href="Web.Payments.Cielo.Types.html#sandboxEnv"><span class="hs-identifier">sandboxEnv</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Web.Payments.Cielo.Types.html#Environment"><span class="hs-identifier hs-var">Environment</span></a><span> </span><span class="hs-string">&quot;https://apisandbox.cieloecommerce.cielo.com.br&quot;</span><span>
+</span><a name="line-57"></a><span>                         </span><span class="hs-string">&quot;https://apiquerysandbox.cieloecommerce.cielo.com.br&quot;</span><span>
+</span><a name="line-58"></a><span>
+</span><a name="line-59"></a><span class="hs-keyword">data</span><span> </span><a name="PaymentProvider"><a href="Web.Payments.Cielo.Types.html#PaymentProvider"><span class="hs-identifier">PaymentProvider</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="PaymentProviderBradesco"><a href="Web.Payments.Cielo.Types.html#PaymentProviderBradesco"><span class="hs-identifier">PaymentProviderBradesco</span></a></a><span>
+</span><a name="line-60"></a><span>                     </span><span class="hs-glyph">|</span><span> </span><a name="PaymentProviderBancoDoBrasil"><a href="Web.Payments.Cielo.Types.html#PaymentProviderBancoDoBrasil"><span class="hs-identifier">PaymentProviderBancoDoBrasil</span></a></a><span>
+</span><a name="line-61"></a><span>                     </span><span class="hs-glyph">|</span><span> </span><a name="PaymentProviderSimulado"><a href="Web.Payments.Cielo.Types.html#PaymentProviderSimulado"><span class="hs-identifier">PaymentProviderSimulado</span></a></a><span>
+</span><a name="line-62"></a><span>  </span><span class="hs-keyword">deriving</span><span class="hs-special">(</span><span class="hs-identifier hs-type">Read</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Show</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Eq</span><span class="hs-special">)</span><span>
+</span><a name="line-63"></a><span>
+</span><a name="line-64"></a><a href="#local-1627501873"><span class="hs-identifier hs-var">deriveJSON</span></a><span> </span><span class="hs-char">''PaymentProvider
+
+data PaymentType = PaymentTypeCreditCard
+                 | PaymentTypeDebitCard
+                 | PaymentTypeElectronicTransfer
+                 | PaymentTypeBoleto
+  deriving(Read, Show, Eq)
+
+instance Default PaymentType where
+    def = PaymentTypeCreditCard
+
+deriveJSON ''PaymentType
+
+data Currency = CurrencyBRL
+              | CurrencyUSD
+              | CurrencyMXN
+              | CurrencyCOP
+              | CurrencyCLP
+              | CurrencyARS
+              | CurrencyPEN
+              | CurrencyEUR
+              | CurrencyPYN
+              | CurrencyUYU
+              | CurrencyVEB
+              | CurrencyVEF
+              | CurrencyGBP
+  deriving(Read, Show, Eq)
+
+instance Default Currency where
+    def = CurrencyBRL
+
+deriveJSON ''Currency
+
+data Interval = IntervalMonthly
+              | IntervalBimonthly
+              | IntervalQuarterly
+              | IntervalSemiAnnual
+              | IntervalAnnual
+  deriving(Read, Show, Eq)
+
+instance Default Interval where
+    def = IntervalMonthly
+
+instance ToJSON Interval where
+    toJSON IntervalMonthly = &quot;Monthly&quot;
+    toJSON IntervalBimonthly = &quot;Bimonthly&quot;
+    toJSON IntervalQuarterly = &quot;Quarterly&quot;
+    toJSON IntervalSemiAnnual = &quot;SemiAnnual&quot;
+    toJSON IntervalAnnual = &quot;Annual&quot;
+
+instance FromJSON Interval where
+    parseJSON (String m) = case m of
+        &quot;Monthly&quot; -&gt; return IntervalMonthly
+        &quot;Bimonthly&quot; -&gt; return IntervalBimonthly
+        &quot;Quarterly&quot; -&gt; return IntervalQuarterly
+        &quot;SemiAnnual&quot; -&gt; return IntervalSemiAnnual
+        &quot;Annual&quot; -&gt; return IntervalAnnual
+        str -&gt; fail (&quot;Failed to parse Interval &quot; &lt;&gt; convert str)
+    parseJSON (Number m) = case m of
+        1 -&gt; return IntervalMonthly
+        2 -&gt; return IntervalBimonthly
+        4 -&gt; return IntervalQuarterly
+        6 -&gt; return IntervalSemiAnnual
+        12 -&gt; return IntervalAnnual
+        n -&gt; fail (&quot;Failed to parse Interval &quot; &lt;&gt; show n)
+    parseJSON invalid = typeMismatch &quot;Interval&quot; invalid
+
+data RecurrentPayment = RecurrentPayment { recurrentPaymentAuthorizeNow       :: Maybe Bool
+                                         , recurrentPaymentEndDate            :: Maybe Text
+                                         , recurrentPaymentStartDate          :: Maybe Text
+                                         , recurrentPaymentInterval           :: Maybe Interval
+                                         , recurrentPaymentRecurrentPaymentId :: Maybe Text
+                                         }
+  deriving(Read, Show, Eq)
+
+instance Default RecurrentPayment where
+    def = RecurrentPayment { recurrentPaymentAuthorizeNow = Just True
+                           , recurrentPaymentEndDate = Nothing
+                           , recurrentPaymentStartDate = Nothing
+                           , recurrentPaymentInterval = Just IntervalMonthly
+                           , recurrentPaymentRecurrentPaymentId = Nothing
+                           }
+
+deriveJSON ''RecurrentPayment
+
+data Address = Address { addressStreet     :: Maybe Text
+                       , addressNumber     :: Maybe Text
+                       , addressComplement :: Maybe Text
+                       , addressZipCode    :: Maybe Text
+                       , addressCity       :: Maybe Text
+                       , addressState      :: Maybe Text
+                       , addressCountry    :: Maybe Text
+                       }
+  deriving(Read, Show, Eq)
+
+instance Default Address where
+    def = Address Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
+deriveJSON ''Address
+
+data CreditCard = CreditCard { creditCardCardNumber     :: Text
+                             , creditCardHolder         :: Text
+                             , creditCardExpirationDate :: Text
+                             , creditCardSecurityCode   :: Maybe Text
+                             , creditCardSaveCard       :: Maybe Bool
+                             , creditCardBrand          :: Text
+                             , creditCardCardToken      :: Maybe Text
+                             }
+  deriving(Read, Show, Eq)
+
+instance Default CreditCard where
+    def = CreditCard &quot;&quot; &quot;&quot; &quot;&quot; Nothing Nothing &quot;&quot; Nothing
+
+deriveJSON ''CreditCard
+
+data Customer = Customer { customerName            :: Text
+                         , customerEmail           :: Maybe Text
+                         , customerBirthDate       :: Maybe Text
+                         , customerIdentity        :: Maybe Text
+                         , customerIdentityType    :: Maybe Text
+                         , customerAddress         :: Maybe Address
+                         , customerDeliveryAddress :: Maybe Address
+                         }
+  deriving(Read, Show, Eq)
+
+instance Default Customer where
+    def = Customer &quot;&quot; Nothing Nothing Nothing Nothing Nothing Nothing
+
+deriveJSON ''Customer
+
+data Payment = Payment { paymentServiceTaxAmount    :: Maybe Int
+                       , paymentInstallments        :: Maybe Int
+                       , paymentInterest            :: Maybe Value
+                       -- ^ Sometimes this is a string, sometimes it's an int... :P
+                       , paymentCreditCard          :: Maybe CreditCard
+                       , paymentType                :: Maybe PaymentType
+                       , paymentAmount              :: Maybe Int
+                       , paymentCapture             :: Maybe Bool
+                       , paymentAuthenticate        :: Maybe Bool
+                       , paymentRecurrent           :: Maybe Bool
+                       , paymentRecurrentPayment    :: Maybe RecurrentPayment
+                       , paymentTid                 :: Maybe Text
+                       , paymentProofOfSale         :: Maybe Text
+                       , paymentAuthorizationCode   :: Maybe Text
+                       , paymentSoftDescriptor      :: Maybe Text
+                       , paymentReturnUrl           :: Maybe Text
+                       , paymentProvider            :: Maybe PaymentProvider
+                       , paymentPaymentId           :: Maybe Text
+                       , paymentReceivedDate        :: Maybe Text
+                       , paymentCapturedAmount      :: Maybe Int
+                       , paymentCapturedDate        :: Maybe Text
+                       , paymentCurrency            :: Maybe Currency
+                       , paymentCountry             :: Maybe Text
+                       , paymentReturnCode          :: Maybe Text
+                       , paymentReturnMessage       :: Maybe Text
+                       , paymentStatus              :: Maybe Int
+                       , paymentLinks               :: Maybe [Value]
+                       , paymentExtraDataCollection :: Maybe [Value]
+                       , paymentExpirationDate      :: Maybe Text
+                       , paymentUrl                 :: Maybe Text
+                       , paymentNumber              :: Maybe Text
+                       , paymentBarCodeNumber       :: Maybe Text
+                       , paymentDigitableLine       :: Maybe Text
+                       , paymentAddress             :: Maybe Text
+                       }
+  deriving(Read, Show, Eq)
+
+instance Default Payment where
+    def = Payment { paymentServiceTaxAmount    = Just 0
+                  , paymentInstallments        = Just 1
+                  , paymentInterest            = Just Null
+                  , paymentCapture             = Nothing
+                  , paymentAuthenticate        = Nothing
+                  , paymentRecurrent           = Nothing
+                  , paymentRecurrentPayment    = Nothing
+                  , paymentCreditCard          = Just def
+                  , paymentTid                 = Nothing
+                  , paymentProofOfSale         = Nothing
+                  , paymentAuthorizationCode   = Nothing
+                  , paymentSoftDescriptor      = Nothing
+                  , paymentReturnUrl           = Nothing
+                  , paymentProvider            = Nothing
+                  , paymentPaymentId           = Nothing
+                  , paymentType                = Just def
+                  , paymentAmount              = Just 0
+                  , paymentReceivedDate        = Nothing
+                  , paymentCapturedAmount      = Nothing
+                  , paymentCapturedDate        = Nothing
+                  , paymentCurrency            = Nothing
+                  , paymentCountry             = Nothing
+                  , paymentReturnCode          = Nothing
+                  , paymentReturnMessage       = Nothing
+                  , paymentStatus              = Nothing
+                  , paymentLinks               = Nothing
+                  , paymentExtraDataCollection = Nothing
+                  , paymentExpirationDate      = Nothing
+                  , paymentUrl                 = Nothing
+                  , paymentNumber              = Nothing
+                  , paymentBarCodeNumber       = Nothing
+                  , paymentDigitableLine       = Nothing
+                  , paymentAddress             = Nothing
+                  }
+
+deriveJSON ''Payment
+
+data Sale = Sale { saleMerchantOrderId :: Text
+                 , saleCustomer        :: Customer
+                 , salePayment         :: Payment
+                 }
+  deriving(Read, Show, Eq)
+
+deriveJSON ''Sale
+
+data SaleUpdate = SaleUpdate { saleUpdateStatus        :: Int
+                             , saleUpdateReturnCode    :: Text
+                             , saleUpdateReturnMessage :: Text
+                             , saleUpdateLinks         :: [Value]
+                             }
+  deriving(Read, Show, Eq)
+
+deriveJSON ''SaleUpdate
+
+data RecurrentPaymentQuery
+    = RecurrentPaymentQuery { recurrentPaymentQueryRecurrentPayment :: RecurrentPayment
+                            , recurrentPaymentQueryCustomer         :: Customer
+                            }
+  deriving(Read, Show, Eq)
+
+deriveJSON ''RecurrentPaymentQuery
+
+data SalesByMerchantOrderQuery
+    = SalesByMerchantOrderQuery { salesByMerchantOrderQueryPayments :: [Payment]
+                                }
+  deriving(Read, Show, Eq)
+
+deriveJSON ''SalesByMerchantOrderQuery
+</span></pre></body></html>
