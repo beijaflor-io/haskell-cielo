@@ -38,6 +38,7 @@ module Web.Payments.Cielo
 
       -- * Types
     , CieloConfig(..)
+    , CreditCard(..)
     , MonadCielo
     , CieloError(..)
     , Merchant(..)
