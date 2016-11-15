@@ -5,7 +5,7 @@ synopsis: Cielo API v3 Bindings for Haskell
 description: Cielo API v3 Bindings
 maintainer: tacla.yamada@gmail.com
 category: Web
-license: AllRightsReserved
+license: AGPL-3
 homepage: https://github.com/beijaflor-io/haskell-cielo
 
 extra-source-files:
